@@ -69,3 +69,113 @@ X_train_trans = ct.transform(X_train)
 logreg.fit(X_train_trans, y_train)
 X_test_trans = ct.transform(X_test)
 print(f"Test Score: {logreg.score(X_test_trans, y_test)}")
+
+
+#--------------- Model Comparisons --------------------#
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.preprocessing import KBinsDiscretizer
+
+"""
+The best way to represent data depends on both the data itself and the model you are using.
+Below we will show differences of 2 model types: LinearRegression and DecisionTreeRegressor
+"""
+
+X,y = mglearn.datasets.make_wave(n_samples=120)
+line = np.linspace(-3,3,1000, endpoint=False).reshape(-1,1)
+
+reg = DecisionTreeRegressor(min_samples_leaf=3).fit(X,y)
+#plt.plot(line, reg.predict(line), label = "Decision Tree")
+
+reg = LinearRegression().fit(X,y)
+#plt.plot(line, reg.predict(line), label="Linear Regression")
+
+#plt.plot(X[:,0],y,'o',c='k')
+#plt.ylabel("Regression Output")
+#plt.xlabel("Input Feature")
+#plt.legend(loc='best')
+#plt.show()
+
+#We can make linear data more powerful by creating bins
+kb = KBinsDiscretizer(n_bins=10, strategy='uniform') #10 bins evenly spaced
+kb.fit(X)
+#Transform data points into bins
+X_binned = kb.transform(X)
+
+"""
+This process uses one-hot encoding, creating a feature for each bin - a boolean representing if the data point is in the bin
+"""
+
+line_binned = kb.transform(line)
+
+reg = LinearRegression().fit(X_binned, y)
+#plt.plot(line, reg.predict(line_binned), label='Linear Reg Binned')
+
+reg = DecisionTreeRegressor(min_samples_split=3).fit(X_binned, y)
+#plt.plot(line, reg.predict(line_binned), label='Dec Tree Binned')
+#plt.vlines(kb.bin_edges_[0], -3,3, linewidth=1, alpha=.2)
+#plt.legend(loc='best')
+#plt.show()
+
+#We can also add polynomial features
+from sklearn.preprocessing import PolynomialFeatures
+
+poly = PolynomialFeatures(degree=10, include_bias=False) #Bias adds feature that's constantly 1
+poly.fit(X)
+
+X_poly = poly.transform(X)
+
+reg = LinearRegression().fit(X_poly,y)
+
+line_poly = poly.transform(line)
+#plt.plot(line, reg.predict(line_poly), label='Polynomial Lin Reg')
+
+#plt.plot(X[:,0],y,'o',c='k')
+#plt.ylabel("Regression Output")
+#plt.xlabel("Input Feature")
+#plt.legend(loc='best')
+#plt.show()
+
+
+#But more complex models like SVM don't can give better models without feature manipulation
+from sklearn.svm import SVR
+
+for gamma in [1,10]:
+    svr = SVR(gamma=gamma).fit(X,y)
+#    plt.plot(line, svr.predict(line), label=f'SVR Gamma = {gamma}')
+
+#plt.plot(X[:,0],y,'o',c='k')
+#plt.ylabel("Regression Output")
+#plt.xlabel("Input Feature")
+#plt.legend(loc='best')
+#plt.show()
+
+
+#------------------ Housing Market Example -------------------------#
+from sklearn.datasets import load_boston
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import Ridge
+from sklearn.ensemble import RandomForestRegressor
+
+boston = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(boston.data, boston.target, random_state=0)
+
+#Rescale data
+scaler = MinMaxScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+poly = PolynomialFeatures(degree=2).fit(X_test_scaled)
+X_train_poly = poly.transform(X_train_scaled)
+X_test_poly = poly.transform(X_test_scaled)
+#Simple Ridge Model
+ridge = Ridge().fit(X_train_scaled, y_train)
+print(f"Score with no interaction: {ridge.score(X_test_scaled, y_test)}")
+ridge = Ridge().fit(X_train_poly, y_train)
+print(f"Score with interactions: {ridge.score(X_test_poly, y_test)}")
+#More complex, RF model
+rf = RandomForestRegressor(n_estimators=100).fit(X_train_scaled, y_train)
+print(f"Score with no interaction: {rf.score(X_test_scaled, y_test)}")
+rf = RandomForestRegressor(n_estimators=100).fit(X_train_poly, y_train)
+print(f"Score with no interaction: {rf.score(X_test_poly, y_test)}")
