@@ -179,3 +179,100 @@ rf = RandomForestRegressor(n_estimators=100).fit(X_train_scaled, y_train)
 print(f"Score with no interaction: {rf.score(X_test_scaled, y_test)}")
 rf = RandomForestRegressor(n_estimators=100).fit(X_train_poly, y_train)
 print(f"Score with no interaction: {rf.score(X_test_poly, y_test)}")
+
+
+#----------- Univariate Nonlinear Transformations -------------------------#
+rnd = np.random.RandomState(0)
+X_org = rnd.normal(size=(1000,3))
+w = rnd.normal(size=3)
+
+X = rnd.poisson(10*np.exp(X_org))
+y = np.dot(X_org, w)
+
+#Visualize Data with Poisson Distribution
+bins = np.bincount(X[:,0])
+#plt.bar(range(len(bins)), bins, color='grey')
+#plt.ylabel("Number of appearances")
+#plt.xlabel("Value")
+#plt.show()
+
+#Building a model
+X_train, X_test, y_train, y_test = train_test_split(X,y,random_state=0)
+score = Ridge().fit(X_train,y_train).score(X_test, y_test)
+print(f"Test Score: {score}")
+
+#We can get better results by transforming the data
+X_train_log = np.log(X_train+1) #+1 because log(0) undefined
+X_test_log = np.log(X_test+1)
+#Visualize transformed data
+#plt.hist(X_train_log[:,0],bins=25,color='grey')
+#plt.ylabel("Number of appearances")
+#plt.xlabel("Value")
+#plt.show()
+#Score data
+score = Ridge().fit(X_train_log,y_train).score(X_test_log, y_test)
+print(f"Test Score: {score}")
+
+
+#------------- Univariate Statistics ----------------------#
+from sklearn.datasets import load_breast_cancer
+from sklearn.feature_selection import SelectPercentile
+from sklearn.linear_model import LogisticRegression
+
+"""
+Univariate statistics is used to compute which features are likely related to the target.
+Features that are less likely to be related are dropped from the model.
+"""
+
+cancer = load_breast_cancer()
+
+#Get deterministic random numbers
+rng = np.random.RandomState(42)
+noise = rng.normal(size=(len(cancer.data), 50))
+X_w_noise = np.hstack([cancer.data,noise])
+
+X_train, X_test, y_train, y_test = train_test_split(X_w_noise, cancer.target, random_state=0, test_size=.5)
+
+select = SelectPercentile(percentile=50) #select 50% of the features
+select.fit(X_train, y_train) #Calculate the transform
+
+X_train_selected = select.transform(X_train) #Apply the transform
+X_test_selected = select.transform(X_test) #Also need to transform test data
+
+print(f"X_train_shape: {X_train_selected.shape}\nX_test_shape:{X_test_selected.shape}")
+
+
+lr = LogisticRegression().fit(X_train, y_train)
+print(f"Score with 100% of features: {lr.score(X_test, y_test)}")
+lr.fit(X_train_selected, y_train)
+print(f"Score with 50% of features: {lr.score(X_test_selected, y_test)}")
+
+#----------------- Model Based Feature Selection -----------------------#
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import RandomForestClassifier
+
+#Select features with above-median feature importance on a RandomForestClassifier model
+select = SelectFromModel(RandomForestClassifier(n_estimators=100, random_state=42), threshold="median")
+
+select.fit(X_train, y_train)
+X_train_l1 = select.transform(X_train)
+X_test_l1 = select.transform(X_test)
+
+score = LogisticRegression().fit(X_train_l1, y_train).score(X_test_l1, y_test)
+print(f"Test Score: {score}")
+
+#--------------------- Iterative Feature Selection -------------------------#
+from sklearn.feature_selection import RFE
+
+"""
+Recursively removes least important feature, builds new model, and repeats until stop critereon is reached.
+"""
+
+select = RFE(RandomForestClassifier(n_estimators=100, random_state=42), n_features_to_select=40)
+select.fit(X_train, y_train)
+
+X_train_rfe = select.transform(X_train)
+X_test_rfe = select.transform(X_test)
+
+score = LogisticRegression().fit(X_train_rfe, y_train).score(X_test_rfe, y_test)
+print(f"RFE Test Score: {score}")
