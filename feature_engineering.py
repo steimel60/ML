@@ -318,3 +318,45 @@ def eval_on_features(features, target, regressor):
 
 regressor = RandomForestRegressor(n_estimators=100, random_state=0)
 eval_on_features(X, y, regressor)
+
+"""
+Notice our prediction is a flat line and R^2 is -.04, we learned nothing.
+Because our tree only goes off the closest value (the most recent date) it predicts that dates value as a constant for all future dates.
+However we can easily see day and time have effects so we can extract and add these features
+"""
+X_hour = citibike.index.hour.values.reshape(-1,1)
+eval_on_features(X_hour, y, regressor) #Obviously better, but needs days still
+
+X_hour_week = np.hstack([citibike.index.dayofweek.values.reshape(-1,1), citibike.index.hour.values.reshape(-1,1)])
+eval_on_features(X_hour_week, y, regressor)
+
+#Now with a linear model
+eval_on_features(X_hour_week, y, LinearRegression()) #Bad performance, Model sees days and times as continuous - we can fix this with OneHotEncoder
+
+enc = OneHotEncoder()
+X_hour_week_hot = enc.fit_transform(X_hour_week).toarray()
+eval_on_features(X_hour_week_hot, y, Ridge()) #Better but "time of day" is generalized over each day of the week, we need interactions
+
+poly_transformer = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+X_hour_week_hot_poly = poly_transformer.fit_transform(X_hour_week_hot)
+lr = Ridge()
+eval_on_features(X_hour_week_hot_poly, y, lr) #Finally comparable to RandomForest
+
+"""
+Advantage of this model is we can easily see what we learned
+"""
+
+hour = ["%02d:00" % i for i in range(0, 24, 3)]
+day = ["Mon", "Tues", "Weds", "Thurs", "Fri", "Sat", "Sun"]
+features = day + hour
+
+features_poly = poly_transformer.get_feature_names(features)
+features_nonzero = np.array(features_poly)[lr.coef_ != 0]
+coef_nonzero = lr.coef_[lr.coef_ != 0]
+
+plt.figure(figsize=(15,2))
+plt.plot(coef_nonzero, 'o')
+plt.xticks(np.arange(len(coef_nonzero)), features_nonzero, rotation=90)
+plt.xlabel("Feature Name")
+plt.ylabel("Feature Magnitude")
+plt.show()
