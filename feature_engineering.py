@@ -276,3 +276,45 @@ X_test_rfe = select.transform(X_test)
 
 score = LogisticRegression().fit(X_train_rfe, y_train).score(X_test_rfe, y_test)
 print(f"RFE Test Score: {score}")
+
+
+#-------------------- Utilizing Outside Knowledge ----------------------------#
+citibike = mglearn.datasets.load_citibike()
+print(citibike.head())
+
+plt.figure(figsize=(10,3))
+xticks = pd.date_range(start=citibike.index.min(), end=citibike.index.max(), freq='D')
+plt.xticks(xticks.astype("int"), xticks.strftime("%a %m-%d"), rotation=90, ha='left')
+plt.plot(citibike, linewidth=1)
+plt.xlabel("Date")
+plt.ylabel("Rentals")
+plt.show()
+
+y = citibike.values
+X = citibike.index.astype("int64").values.reshape(-1,1)//10**9
+n_train = 184 #Use first 184 data points for train data - "past" to predict future is common for time data
+
+#function to evaluate and plot a regressor on a given feature set
+def eval_on_features(features, target, regressor):
+    #Split data
+    X_train, X_test = features[:n_train], features[n_train:]
+    y_train, y_test = target[:n_train], target[n_train:]
+    regressor.fit(X_train, y_train)
+    print(f"Test Set R^2: {regressor.score(X_test, y_test)}")
+    #Make Predictions
+    y_pred = regressor.predict(X_test)
+    y_pred_train = regressor.predict(X_train)
+    #Plot
+    plt.figure(figsize=(10,3))
+    plt.xticks(range(0,len(X),8), xticks.strftime("%a %m-%d"), rotation=90, ha='left')
+    plt.plot(range(n_train), y_train, label='Train')
+    plt.plot(range(n_train, len(y_test)+n_train), y_test, '-', label="test")
+    plt.plot(range(n_train), y_pred_train, '--', label='Prediction Train')
+    plt.plot(range(n_train, len(y_test)+n_train), y_pred, '--', label="Prediction Test")
+    plt.legend(loc=(1.01,0))
+    plt.xlabel("Date")
+    plt.ylabel("Rentals")
+    plt.show()
+
+regressor = RandomForestRegressor(n_estimators=100, random_state=0)
+eval_on_features(X, y, regressor)
