@@ -136,3 +136,32 @@ print(f"GSCV Best Estimator: {grid_search.best_estimator_}")
 #It can be useful to see the results of each iteration
 results = pd.DataFrame(grid_search.cv_results_)
 print(results.head())
+
+#Nested cross validation can be useful to determine how well a model works on a particular dataset
+scores = cross_val_score(GridSearchCV(SVC(), param_grid, cv=5), iris.data, iris.target, cv=5)
+print(f"Cross Val Scores: {scores}    Mean: {np.mean(scores)}")
+
+
+#------------------ Imbalanced Data Sets ----------------------$
+from sklearn.datasets import load_digits
+from sklearn.dummy import DummyClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix
+
+digits = load_digits()
+y = digits.target == 9
+
+X_train, X_test, y_train, y_test = train_test_split(digits.data, y, random_state=0)
+dummy_majority = DummyClassifier(strategy='most_frequent').fit(X_train, y_train) #Always predict "not 9"
+pred_most_freq = dummy_majority.predict(X_test)
+print(f"Unique predicted labels: {np.unique(pred_most_freq)}")
+print(f"Test Score: {dummy_majority.score(X_test, y_test)}")
+
+tree = DecisionTreeClassifier(max_depth=2).fit(X_train, y_train)
+pred_tree = tree.predict(X_test)
+print(f"Tree Score: {tree.score(X_test, y_test)}")
+
+#Because data imbalanced our score metric is not a good indicator
+#use confusion_matrix to see type 1 and 2 errors
+confusion = confusion_matrix(y_test, pred_tree)
+print(confusion)
