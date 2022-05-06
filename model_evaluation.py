@@ -147,6 +147,7 @@ from sklearn.datasets import load_digits
 from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 
 digits = load_digits()
 y = digits.target == 9
@@ -165,3 +166,24 @@ print(f"Tree Score: {tree.score(X_test, y_test)}")
 #use confusion_matrix to see type 1 and 2 errors
 confusion = confusion_matrix(y_test, pred_tree)
 print(confusion)
+"""
+Confusion matrix returns matrix with the following representation
+            Pred -1     Pred 1
+Class -1    True        Type 1 err
+Class 1     Type 2 err  True
+
+Accuracy: total_correct/total_predicted
+
+Precision: true_positive/(true_positive+false_positive)
+    Precision is a good metric when we want to limit the number of false positive
+
+Recall: true_positive/(true_positive+false_negative)
+    Accuracy of all positive predictions, used when goal is to avoid false negative
+
+F-Score of F-measure: precision*recall/precision+recall
+    F-score is a good balance between both precision and recall
+"""
+
+#classification_report is an easy way to get these metrics
+print(classification_report(y_test, pred_most_freq, target_names=["not nine", "nine"]))
+print(classification_report(y_test, pred_tree, target_names=["not nine", "nine"]))
