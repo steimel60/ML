@@ -187,3 +187,14 @@ F-Score of F-measure: precision*recall/precision+recall
 #classification_report is an easy way to get these metrics
 print(classification_report(y_test, pred_most_freq, target_names=["not nine", "nine"]))
 print(classification_report(y_test, pred_tree, target_names=["not nine", "nine"]))
+
+
+#-------------------- Multiclass Classification -----------------------------#
+from sklearn.metrics import accuracy_score
+
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target, random_state=0)
+lr = LogisticRegression().fit(X_train, y_train)
+pred = lr.predict(X_test)
+print(f"Acc: {accuracy_score(y_test, pred)}")
+print(f"Confusion Martrix: {confusion_matrix(y_test, pred)}")
+print(f"Classification Report: {classification_report(y_test, pred)}")
