@@ -66,9 +66,45 @@ print(f"make_pipeline Steps:\n{easy_pipe.steps}")
 #-------------------- Accessing Attributes ----------------------------#
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
 
+#Build pipeline
 pipe = make_pipeline(StandardScaler(), PCA(n_components=2))
 pipe.fit(cancer.data)
 #Get the 2 principal components from step 2
 components = pipe.named_steps["pca"].components_
 print(components)
+
+
+#We can also do this with GridSearchCV
+pipe = make_pipeline(StandardScaler(), LogisticRegression()) #Make pipeline
+param_grid = {'logisticregression__C':[.01, .1, 1, 10, 100]} #Make parameter grid
+X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, random_state=4) #Split data
+grid = GridSearchCV(pipe, param_grid, cv=5) #Grid Search over pipeline with 5 folds
+grid.fit(X_train, y_train) #Fit our GridSearchCV
+print(grid.best_estimator_)#Our best estimator is a pipeline with 2 steps
+print(grid.best_estimator_.named_steps["logisticregression"]) #So we can get steps from it
+print(grid.best_estimator_.named_steps["logisticregression"].coef_) #And other attributes
+
+
+#--------------- Preprocessing Pipelines ------------------#
+from sklearn.datasets import load_boston
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import Ridge
+
+boston = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(boston.data, boston.target, random_state=0)
+
+pipe = make_pipeline(StandardScaler(),PolynomialFeatures(),Ridge())
+param_grid = {'polynomialfeatures__degree':[1, 2, 3], 'ridge__alpha':[.001,.01,.1,1,10,100]}
+
+grid = GridSearchCV(pipe, param_grid=param_grid, cv=5, n_jobs=-1)
+grid.fit(X_train, y_train)
+#Show results on heatmap
+plt.matshow(grid.cv_results_['mean_test_score'].reshape(3,-1), vmin=0, cmap="viridis")
+plt.xlabel("ridge__alpha")
+plt.ylabel("polynomialfeatures__degree")
+plt.xticks(range(len(param_grid['ridge__alpha'])), param_grid['ridge__alpha'])
+plt.yticks(range(len(param_grid['polynomialfeatures__degree'])), param_grid['polynomialfeatures__degree'])
+plt.colorbar()
+plt.show()
