@@ -60,7 +60,7 @@ grid = GridSearchCV(LogisticRegression(), param_grid=param_grid, cv=5)
 grid.fit(X_train, y_train)
 print(f"Best Cross Val Score: {grid.best_score_}")
 print(f"Best Params: {grid.best_params_}")
-print(f"Test Score: {gris.score(X_test, y_test)}")
+print(f"Test Score: {grid.score(X_test, y_test)}")
 
 #We can also set the min number of documents that must contain a "word" to have that word added to our vocabulary
 #This helps get rid of typos or unhelpful words
