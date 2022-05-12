@@ -92,3 +92,34 @@ param_grid = {'logisticregression__C':[.001, .01, .1, 1, 10]}
 grid = GridSearchCV(pipe, param_grid, cv=5)
 grid.fit(text_train, y_train)
 print(f"Tfid Score: {grid.best_score_}")
+
+#--------------------- Investigate Coefficients --------------------#
+mglearn.tools.visualize_coefficients(grid.best_estimator_.named_steps["logisticregression"].coef_, feature_names, n_top_features=40)
+plt.show()
+
+#-------------------------- N-Grams ------------------------------#
+"""
+We can also look at pairs (bigrams), triplets (trigrams), and ngrams to get better idea of context.
+For example, this can help differentiate between "good, not bad" and "bad, not good"
+"""
+
+cv = CountVectorizer(ngram_range(1,1)).fit(bards_words)
+print(f"1-gram: {cv.get_feature_names()}")
+
+cv = CountVectorizer(ngram_range(2,2)).fit(bards_words) #Only bigrams, min token normally 1 - this is strictly for this example
+print(f"1-gram: {cv.get_feature_names()}")
+
+pipe = make_pipeline(TfidfVectorizer(min_df=5), LogisticRegression())
+param_grid = {'logisticregression__C':[.001, .01, .1, 1, 10],
+                'tfidvectorizer__ngram_range': [(1,1), (1,2), (1,3)]}
+grid = GridSearchCV(pipe, param_grid, cv=5)
+grid.fit(text_train, y_train)
+print(f"Best Cross Val Score n-grams: {grid.best_score_}")
+print(f"Best Params n-grams: {grid.best_params_}")
+
+#visualize
+scores = grid.cv_results_['mean_test_score'].reshape(-1,3).T
+heatmap = mglearn.tools.heatmap(scores, xlabel='C', ylabel='ngram_range', cmap='viridis', fmt='%.3f',
+                                xticklabels=param_grid['logisticregression__C'], yticklabels=param_grid['tfidvectorizer__ngram_range'])
+plt.colorbar(heatmap)
+plt.show()
