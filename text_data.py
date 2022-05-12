@@ -75,7 +75,7 @@ Stop words are words that are very commonly found in a language.
 Removing them can sometimes increase a models accuracy.
 """
 
-print(list(ENGLISH_STOP_WORDS[::10]))
+print(list(ENGLISH_STOP_WORDS)[::10])
 
 #------------------- TF IDF -----------------------------#
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -123,3 +123,25 @@ heatmap = mglearn.tools.heatmap(scores, xlabel='C', ylabel='ngram_range', cmap='
                                 xticklabels=param_grid['logisticregression__C'], yticklabels=param_grid['tfidvectorizer__ngram_range'])
 plt.colorbar(heatmap)
 plt.show()
+
+
+#----------------------- Topic Modeling ------------------------#
+from sklearn.decomposition import LatentDirichletAllocation
+
+"""
+One technique often seen is topic modeling.
+A good example is new documents and deciding if its sports, weather, politics etc.
+LatentDirichletAllocation tries to do this by grouping words that often appear together.
+"""
+
+
+vect = CountVectorizer(n_topics=10000, max_df=.15)
+X = vect.fit(text_train)
+
+lda = LatentDirichletAllocation(n_topics=10, learning_method='batch', max_iter=25, random_state=0)
+document_topics = lda.fit_transform(X)
+
+#Print out topics
+sorting = np.argsort(lda.components_, axis=1)[:, ::-1]
+feature_names = np.array(vect.get_feature_names())
+mglearn.tools.print_topics(topics=range(10), feature_names=feature_names, sorting=sorting, topics_per_chunk=5, n_words=10)
